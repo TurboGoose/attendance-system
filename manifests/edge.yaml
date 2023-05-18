@@ -1,0 +1,60 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: edge-side
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      side: edge
+  template:
+    metadata:
+      labels:
+        side: edge
+    spec:
+      containers:
+      - name: edge
+        imagePullPolicy: Always
+        image: turbogoosen/edge:latest
+        resources:
+          limits:
+            memory: "512Mi"
+            cpu: "500m"
+        env:
+        - name: HOST_NAME
+          value: "cloud-service.default.svc.cluster.local"
+        - name: HOST_PORT
+          value: "8000"
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: postgres-user
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: postgres-password
+        - name: POSTGRES_HOST
+          valueFrom:
+            secretKeyRef:
+              name: postgres-secret
+              key: postgres-host
+        - name: POSTGRES_PORT
+          valueFrom:
+            configMapKeyRef:
+              name: postgres-config
+              key: postgres-port
+        - name: POSTGRES_DBNAME
+          valueFrom:
+            configMapKeyRef:
+              name: postgres-config
+              key: postgres-dbname
+        volumeMounts:
+          - mountPath: /app/edge/benchmark/data
+            name: dataset-volume
+      volumes:
+      - name: dataset-volume
+        hostPath:
+          path: "~/dataset"
+          type: Directory
